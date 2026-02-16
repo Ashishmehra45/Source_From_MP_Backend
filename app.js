@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static folder for uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Routes
 app.use('/api/sellers', sellerRoutes);
