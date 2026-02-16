@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const exporterRoutes = require('./routes/exporterRoutes');
+const sellerRoutes = require('./routes/sellerRoutes');
 
 const app = express();
 
@@ -13,6 +13,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Routes
-app.use('/api/sellers', exporterRoutes);
+app.use('/api/sellers', sellerRoutes);
 
 module.exports = app;
