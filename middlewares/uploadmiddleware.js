@@ -1,68 +1,64 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const dotenv = require('dotenv'); // 1. Dotenv import kiya
 
-// Helper function: Folder ensure karne ke liye (agar nahi hai to bana dega)
-const ensureDir = (dir) => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+// 2. Config load ki (Force load)
+dotenv.config();
+
+// 👇 DEBUGGING: Server start hote hi ye Terminal me print hoga
+console.log("--- CLOUDINARY CONFIG CHECK ---");
+console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "Loaded ✅" : "Missing ❌");
+console.log("API Key:", process.env.CLOUDINARY_API_KEY ? "Loaded ✅" : "Missing ❌");
+console.log("API Secret:", process.env.CLOUDINARY_API_SECRET ? "Loaded ✅" : "Missing ❌");
+console.log("---------------------------------");
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    let folderName = 'source_mp_general';
+    let resourceType = 'auto';
+
+    if (file.fieldname === 'catalog') {
+        folderName = 'mp_source_catalogs';
+    } else if (file.fieldname === 'image') {
+        folderName = 'mp_source_products';
     }
-};
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        let uploadPath = 'uploads/';
-
-        // CASE 1: Registration ke time (Catalog)
-        if (file.fieldname === 'catalog') {
-            uploadPath = 'uploads/sellerpitch';
-        } 
-        // CASE 2: Product Add karte time (Image)
-        else if (file.fieldname === 'product_image') {
-            uploadPath = 'uploads/seller_products';
-        }
-
-        ensureDir(uploadPath); // Folder create karega agar nahi mila
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        // Unique filename: timestamp-originalname (spaces hata kar)
-        const cleanName = file.originalname.replace(/\s+/g, '-');
-        cb(null, `${Date.now()}-${cleanName}`);
-    }
+    return {
+      folder: folderName,
+      resource_type: resourceType,
+      public_id: `${Date.now()}-${file.originalname.split('.')[0]}`
+    };
+  },
 });
 
 const fileFilter = (req, file, cb) => {
-    // LOGIC 1: Catalog ke liye sirf Documents
     if (file.fieldname === 'catalog') {
         const filetypes = /pdf|doc|docx/;
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        
-        if (extname) {
-            return cb(null, true);
-        }
+        const isExtValid = filetypes.test(file.originalname.toLowerCase());
+        if (isExtValid) return cb(null, true);
         cb(new Error('Error: Catalog must be a Document (PDF/DOC)!'));
     } 
-    // LOGIC 2: Product ke liye sirf Images
-    else if (file.fieldname === 'product_image') {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = file.mimetype.startsWith('image/');
-
-        if (extname && mimetype) {
-            return cb(null, true);
-        }
+    else if (file.fieldname === 'image') {
+        if (file.mimetype.startsWith('image/')) return cb(null, true);
         cb(new Error('Error: Product file must be an Image (JPG/PNG)!'));
     }
     else {
-        cb(new Error('Unexpected field name'));
+        cb(null, true);
     }
 };
 
 const upload = multer({
-    storage,
+    storage: storage,
     fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // Max size 10MB
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
 module.exports = upload;

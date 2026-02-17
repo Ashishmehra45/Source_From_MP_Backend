@@ -1,9 +1,10 @@
 const Exporter = require('../models/seller');
-const Product = require('../models/Product'); // Duplicate removed
+const Product = require('../models/Product');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const fs = require('fs'); 
-const path = require('path'); // ✅ Required for delete/update logic
+
+// ❌ ImageKit import ki ab zarurat nahi hai
+// const imagekit = require('../config/imagekit'); 
 
 const registerSeller = async (req, res) => {
     try {
@@ -12,10 +13,17 @@ const registerSeller = async (req, res) => {
         const userExists = await Exporter.findOne({ email });
         if (userExists) return res.status(400).json({ message: 'Exporter already exists' });
 
+        // ✅ Catalog Upload Logic (Cloudinary)
+        // Multer middleware ne file upload kar di hai, URL req.file.path mein hai
+        let catalogUrl = null;
+        if (req.file) {
+            catalogUrl = req.file.path; // Cloudinary URL
+        }
+
         const exporter = await Exporter.create({
             companyName, authorizedPerson, mobileNumber, email, password,
             companyHeritage, hasIECode, iecNumber, exportCountries,
-            catalogPath: req.file ? req.file.path : null
+            catalogPath: catalogUrl // ✅ Cloud URL save kiya
         });
 
         if (exporter) {
@@ -59,38 +67,50 @@ const loginSeller = async (req, res) => {
 };
 
 const addProduct = async (req, res) => {
+    console.log("⚡ STARTING PRODUCT UPLOAD...");
+
     try {
+      
+        // 2. Agar User missing hai (Sabse common error)
+        if (!req.user || !req.user._id) {
+            console.log("❌ ERROR: User not found in request (Auth failed)");
+            return res.status(401).json({ message: "User authentication failed. Token might be missing." });
+        }
+
+        // 3. Agar File missing hai
+        if (!req.file) {
+            console.log("❌ ERROR: Image file missing");
+            return res.status(400).json({ message: "Product image is required" });
+        }
+
         const { name, hscode, category, desc } = req.body;
 
-        if (!req.file) {
-            return res.status(400).json({ message: 'Product image is required' });
-        }
-
-        if (!req.user) {
-            return res.status(401).json({ message: 'Not authorized, seller not found' });
-        }
-
+        // 4. Database mein save karne ki koshish
+        console.log("💾 Saving to MongoDB...");
+        
         const product = await Product.create({
             seller: req.user._id,
-            name,
+            name: name,
             hscode: hscode || 'N/A',
-            category,
-            description: desc, // Note: DB field is 'description'
-            image: req.file.path
+            category: category,
+            description: desc,
+            image: req.file.path // Cloudinary URL
         });
 
-        res.status(201).json({
-            success: true,
-            message: 'Product listed successfully',
-            product
-        });
+        console.log("✅ SUCCESS: Product Created!", product);
+        res.status(201).json({ success: true, product });
 
     } catch (error) {
-        console.error("Add Product Error:", error);
-        res.status(500).json({ message: error.message });
+        // 🔥 ASLI ERROR YAHAN DIKHEGA
+        console.log("🔥 CRITICAL DATABASE ERROR 🔥");
+        console.log(error); // Terminal mein poora error object print hoga
+        
+        res.status(500).json({ 
+            message: "Server Error: Check Terminal logs for details",
+            error: error.message 
+        });
     }
 };
-
 
 const getMyProducts = async (req, res) => {
     try {
@@ -105,7 +125,6 @@ const getMyProducts = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
-
 
 const getPublicProducts = async (req, res) => {
     try {
@@ -124,7 +143,6 @@ const getPublicProducts = async (req, res) => {
     }
 };
 
-
 const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
@@ -133,19 +151,12 @@ const deleteProduct = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        // Security Check
         if (product.seller.toString() !== req.user._id.toString()) {
             return res.status(401).json({ message: "Not authorized to delete this product" });
         }
 
-        // Image delete logic
-        if (product.image) {
-             // __dirname controller folder hai, isliye '..' karke root pe gaye
-             const imagePath = path.join(__dirname, '..', product.image);
-             if (fs.existsSync(imagePath)) {
-                 fs.unlinkSync(imagePath);
-             }
-        }
+        // Future Note: Cloudinary se bhi delete kar sakte hain using public_id
+        // Par abhi ke liye sirf DB se hata rahe hain
 
         await product.deleteOne();
         res.status(200).json({ success: true, message: "Product deleted successfully" });
@@ -156,7 +167,6 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-
 const updateProduct = async (req, res) => {
     try {
         const { name, category, hscode, desc } = req.body;
@@ -166,30 +176,19 @@ const updateProduct = async (req, res) => {
             return res.status(404).json({ message: "Product not found" });
         }
 
-        // Security Check
         if (product.seller.toString() !== req.user._id.toString()) {
             return res.status(401).json({ message: "Not authorized to edit this product" });
         }
 
-        // Fields Update
         product.name = name || product.name;
         product.category = category || product.category;
         product.hscode = hscode || product.hscode;
-        
-        // ✅ Fix: DB me field 'description' hai, 'desc' nahi
-        product.description = desc || product.description; 
+        product.description = desc || product.description;
 
-        // Image Update
+        // ✅ Image Update Logic (Cloudinary)
         if (req.file) {
-            // Purani image delete
-            if (product.image) {
-                const oldPath = path.join(__dirname, '..', product.image);
-                if (fs.existsSync(oldPath)) {
-                    fs.unlinkSync(oldPath);
-                }
-            }
-            // Nayi image set
-            product.image = req.file.path;
+            // Agar nayi file aayi hai, to Multer ne upload kar di hai
+            product.image = req.file.path; // Naya URL set kiya
         }
 
         const updatedProduct = await product.save();
