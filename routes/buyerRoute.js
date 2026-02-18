@@ -14,4 +14,4 @@ router.post('/login', loginBuyer);
 // Private Routes (Sirf logged-in buyer ke liye)
 router.get('/profile', protectBuyer, getBuyerProfile);
 
-module.exports = router;
+module.exports = router;    
