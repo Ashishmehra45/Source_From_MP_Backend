@@ -6,12 +6,7 @@ const dotenv = require('dotenv'); // 1. Dotenv import kiya
 // 2. Config load ki (Force load)
 dotenv.config();
 
-// 👇 DEBUGGING: Server start hote hi ye Terminal me print hoga
-console.log("--- CLOUDINARY CONFIG CHECK ---");
-console.log("Cloud Name:", process.env.CLOUDINARY_CLOUD_NAME ? "Loaded ✅" : "Missing ❌");
-console.log("API Key:", process.env.CLOUDINARY_API_KEY ? "Loaded ✅" : "Missing ❌");
-console.log("API Secret:", process.env.CLOUDINARY_API_SECRET ? "Loaded ✅" : "Missing ❌");
-console.log("---------------------------------");
+
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,

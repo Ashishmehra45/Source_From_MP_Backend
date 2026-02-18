@@ -3,8 +3,7 @@ const Product = require('../models/Product');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// ❌ ImageKit import ki ab zarurat nahi hai
-// const imagekit = require('../config/imagekit'); 
+
 
 const registerSeller = async (req, res) => {
     try {
@@ -13,24 +12,25 @@ const registerSeller = async (req, res) => {
         const userExists = await Exporter.findOne({ email });
         if (userExists) return res.status(400).json({ message: 'Exporter already exists' });
 
-        // ✅ Catalog Upload Logic (Cloudinary)
-        // Multer middleware ne file upload kar di hai, URL req.file.path mein hai
         let catalogUrl = null;
         if (req.file) {
-            catalogUrl = req.file.path; // Cloudinary URL
+            catalogUrl = req.file.path; 
         }
 
         const exporter = await Exporter.create({
             companyName, authorizedPerson, mobileNumber, email, password,
             companyHeritage, hasIECode, iecNumber, exportCountries,
-            catalogPath: catalogUrl // ✅ Cloud URL save kiya
+            catalogPath: catalogUrl
         });
 
         if (exporter) {
             res.status(201).json({
                 _id: exporter._id,
                 companyName: exporter.companyName,
-                token: jwt.sign({ id: exporter._id }, process.env.JWT_SECRET, { expiresIn: '30d' })
+                email: exporter.email,
+                role: 'seller', // ✅ Response me bheja
+                // ✅ Token me role add kiya
+                token: jwt.sign({ id: exporter._id, role: 'seller' }, process.env.JWT_SECRET, { expiresIn: '30d' })
             });
         }
     } catch (error) {
@@ -54,7 +54,12 @@ const loginSeller = async (req, res) => {
                 _id: exporter._id,
                 email: exporter.email,
                 companyName: exporter.companyName,
-                token: jwt.sign({ id: exporter._id }, process.env.JWT_SECRET, { expiresIn: '30d' }),
+                role: 'seller', // ✅ Explicitly response me bheja
+                token: jwt.sign(
+                    { id: exporter._id, role: "seller" }, 
+                    process.env.JWT_SECRET, 
+                    { expiresIn: '30d' }
+                ),
                 message: "Login successful"
             });
         } else {

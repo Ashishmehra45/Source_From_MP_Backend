@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 const sellerRoutes = require('./routes/sellerRoutes');
+const buyerRoutes = require('./routes/buyerRoute');
 
 const app = express();
 
@@ -17,5 +18,7 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 // Routes
 app.use('/api/sellers', sellerRoutes);
+app.use('/api/buyers', buyerRoutes);
+ 
 
 module.exports = app;
