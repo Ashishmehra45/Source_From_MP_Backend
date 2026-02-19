@@ -34,6 +34,10 @@ const buyerSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please enter your city']
     },
+    savedItems: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product' 
+    }],
     // --- Personalization (Interests) ---
     interests: [{
         type: String,
