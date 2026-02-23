@@ -2,6 +2,7 @@ const Exporter = require('../models/seller');
 const Product = require('../models/Product');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const Inquiry = require('../models/Inquiry');
 
 
 
@@ -209,6 +210,47 @@ const updateProduct = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+const getBuyerEnquiries = async (req, res) => {
+ try {
+    // req.user._id seller ki ID hai (protect middleware se aayegi)
+    const inquiries = await Inquiry.find({ sellerId: req.user._id })
+                                   .sort({ createdAt: -1 }); // Latest pehle
+
+    res.status(200).json(inquiries); // Dhyan dein, direct array bhej rahe hain
+  } catch (error) {
+    console.error("Error fetching seller inquiries:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const updateInquiryStatus = async (req, res) => {
+  try {
+    const { id } = req.params; // URL se Inquiry ki ID aayegi
+    const { status } = req.body; // Frontend se 'Approved' ya 'Closed' aayega
+
+    // Database mein inquiry dhundo aur update karo
+    const updatedInquiry = await Inquiry.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true } // Ye naya updated data return karega
+    );
+
+    if (!updatedInquiry) {
+      return res.status(404).json({ success: false, message: "Inquiry nahi mili!" });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Inquiry status updated to ${status}`, 
+      data: updatedInquiry 
+    });
+
+  } catch (error) {
+    console.error("Status Update Error:", error);
+    res.status(500).json({ success: false, message: "Server error status update karne mein" });
+  }
+};
+
 
 module.exports = {
     registerSeller,
@@ -217,5 +259,7 @@ module.exports = {
     getMyProducts,
     getPublicProducts,
     deleteProduct,
-    updateProduct
+    updateProduct,
+    getBuyerEnquiries,
+    updateInquiryStatus
 };

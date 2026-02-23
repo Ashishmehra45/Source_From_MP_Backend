@@ -2,6 +2,7 @@ const Buyer = require("../models/buyer");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Product = require("../models/Product");
+const Inquiry = require("../models/Inquiry");
 
 // 1. Register Buyer
 
@@ -79,8 +80,7 @@ const loginBuyer = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-// 3. Get Profile
-// 3. Get Profile (Logged-in Buyer only)
+
 const getBuyerProfile = async (req, res) => {
   try {
     // req.user humein middleware (protectBuyer) se mil raha hai
@@ -107,7 +107,7 @@ const getBuyerProfile = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching profile" });
   }
 };
-// ✅ Interests ke basis par products dikhao
+
 const getRecommendedProducts = async (req, res) => {
   try {
     const { categories } = req.query; // Frontend se aayega: ?categories=Textiles,Spices
@@ -179,6 +179,21 @@ const getSavedProducts = async (req, res) => {
   }
 };
 
+const getBuyerEnquiries = async (req, res) => {
+  try {
+    // req.user._id humein protectBuyer middleware se milegi
+    const enquiries = await Inquiry.find({ buyerId: req.user._id })
+      .sort({ createdAt: -1 }); // Latest pehle dikhane ke liye
+
+    res.status(200).json(enquiries);
+  } catch (error) {
+    console.error("Fetch Enquiries Error:", error.message);
+    res.status(500).json({ message: "Error fetching your enquiries" });
+  }
+};
+
+
+
 module.exports = {
   registerBuyer,
   loginBuyer,
@@ -186,4 +201,5 @@ module.exports = {
   getRecommendedProducts,
   toggleSaveProduct,
   getSavedProducts,
+  getBuyerEnquiries,
 };

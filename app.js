@@ -7,6 +7,7 @@ dotenv.config();
 const sellerRoutes = require('./routes/sellerRoutes');
 const buyerRoutes = require('./routes/buyerRoute');
 const allProductsRoutes = require('./routes/allProductsRoutes');
+const InquiryRoutes = require('./routes/InquiryRoutes'); // Inquiry routes import karna
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/products', allProductsRoutes); 
+app.use('/api/inquiries', InquiryRoutes); // Inquiry routes add karna
  
 
 module.exports = app;

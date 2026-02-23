@@ -8,6 +8,8 @@ const {
   getPublicProducts,
   deleteProduct,
   updateProduct,
+  getBuyerEnquiries,
+  updateInquiryStatus
 } = require("../controllers/exporterController");
 const upload = require("../middlewares/uploadmiddleware");
 const { protect } = require("../middlewares/SellerauthMiddleware");
@@ -27,5 +29,8 @@ router.get("/my-products", protect, getMyProducts);
 router.get("/public-products", getPublicProducts);
 router.delete("/delete-product/:id", protect, deleteProduct);
 router.put("/update-product/:id", protect, upload.single("image"), updateProduct);
+router.get("/buyer-enquiries", protect, getBuyerEnquiries);
+router.put('/update-status/:id', protect, updateInquiryStatus);
+
 
 module.exports = router;
