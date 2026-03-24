@@ -9,12 +9,14 @@ const inquirySchema = new mongoose.Schema({
   },
   buyerId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'buyer', 
+    // ✅ FIX: 'buyer' ko 'User' kar do (Hamesha wahi naam likho jo model register karte waqt diya tha)
+    ref: 'User', 
     required: [true, "Buyer ID is mandatory"] 
   },
   sellerId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'seller', 
+    // ✅ FIX: 'seller' ko 'Exporter' ya 'Seller' kar do (Check your model registration)
+    ref: 'Exporter', 
     required: [true, "Seller ID is mandatory"] 
   },
 
@@ -51,13 +53,14 @@ const inquirySchema = new mongoose.Schema({
   // --- Optional Field ---
   whatsapp: { 
     type: String, 
-    required: false // Sirf ye field optional hai
+    required: false 
   },
 
   // --- Meta ---
   status: { 
     type: String, 
-    enum: ['Pending', 'Contacted', 'Closed'], 
+    // ✅ FIX: 'Approved' add kiya taaki frontend pe error na aaye
+    enum: ['Pending', 'Contacted', 'Approved', 'Closed'], 
     default: 'Pending' 
   },
   createdAt: { 

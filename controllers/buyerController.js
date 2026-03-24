@@ -110,7 +110,7 @@ const getBuyerProfile = async (req, res) => {
 
 const getRecommendedProducts = async (req, res) => {
   try {
-    const { categories } = req.query; // Frontend se aayega: ?categories=Textiles,Spices
+    const { categories } = req.query; // e.g., ?categories=Textiles,Spices
 
     if (!categories) {
       return res.status(400).json({ message: "No categories provided" });
@@ -121,10 +121,14 @@ const getRecommendedProducts = async (req, res) => {
     // Matching products dhundho
     const products = await Product.find({
       category: { $in: categoryArray },
-    }).limit(6);
+    })
+    .populate('seller', 'city companyName address') // ✅ Address logic add kar diya
+    .sort({ createdAt: -1 }) // Naye products pehle dikhao
+    .limit(6);
 
     res.status(200).json(products);
   } catch (error) {
+    console.error("Recommendation Error:", error);
     res.status(500).json({ message: "Error fetching recommendations" });
   }
 };
